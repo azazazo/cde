@@ -18,7 +18,7 @@ class Paillier:
     def encrypt(self, message):
         if isinstance(message, str):
             message = bytes_to_long(message.encode('utf-8'))
-
+        # print(message)
         assert message < self.n
         r = self.p
         while r in [self.p, self.q]:
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     for i in range(100):
         a = getRandomRange(0, 10 ** 9)
         b = getRandomRange(0, 10 ** 9)
-        assert a + b == paillier.decrypt(paillier.encrypt(a) * paillier.encrypt(b))
+        assert a + b == paillier.decrypt((paillier.encrypt(a) * paillier.encrypt(b)) % paillier.n ** 2)
 
     unique = set()
     for i in range(100):

@@ -9,7 +9,12 @@ app = Flask(__name__)
 
 blockchain = Blockchain()
 
-server = Server()
+server = Server([
+    "John Doe",
+    "Jane Smith",
+    "Mike Johnson"
+])
+
 
 
 def b64(data: str) -> str:
@@ -26,40 +31,62 @@ def get_chain():
         "chain": chain
     })
 
-@app.route("/key", methods=["GET"])
-def get_key():
-    return json.dumps(server.public_key())
 
 @app.route("/vote", methods=["POST"])
 def post_vote():
-    pass
+    # sai use json pls
+    # expecting in form of {"id": "...", "vote": index}
+    user_id = request.json["id"]
+    vote_index = request.json["vote"]
+    if check_user(user_id):
+        return Response("User has already voted", 401)
+    else:
+        print("gwa")
+        votes = [0, 0, 0]
+        votes[vote_index] = 1
+        encrypted_votes = [server.encrypt(vote) for vote in votes]
+        for candidate, vote in zip(server.candidates, encrypted_votes):
+            candidate.votes *= vote
+            candidate.votes %= int(server.public_key()["n"], 16) ** 2
+        blockchain.transact(user_id)
+        blockchain.transact(str(encrypted_votes))
+        blockchain.mine()
+
+        return Response("Vote successful", 200)
+
+
+def decrypt_votes():
+    return [server.decrypt(candidate.votes) for candidate in server.candidates]
+
+
+def check_user(user_id):
+    for block in blockchain.chain:
+        if user_id in block.transactions:
+            return True
+    return False
+
 
 @app.route("/results", methods=["GET"])
 def get_results():
-    pass
-
-# @app.route("/voter/new", methods=["POST"])
-# def create_voter():
-#     assert request.headers.get("Content-Type") == "application/json"
-#
-#     data = request.json
-#
-#     if data["username"] in voters:
-#         return Response("User with username already exists!", 400, mimetype="text/plain")
-#
-#     try:
-#         voters[data["username"]] = voter = Voter(data["username"], data["password"])
-#     except ValueError as e:
-#         return e
-#
-#     # blockchain.transact(b64(f"{voter.id},{voter.key.n}"))
-#     # blockchain.mine()
-#     return Response(f"User with username {data['username']} successfully created.", 201, mimetype="text/plain")
+    chain = []
+    for block in blockchain.chain:
+        chain.append(block.__dict__)
+    json_data = json.dumps({
+        "length": len(chain),
+        "chain": chain
+    })
+    return Response(json_data, 200, mimetype="application/json")
 
 
-@app.route("/keys", methods=["GET"])
-def get_keys():
-    return Response(json.dumps(server.exposed_keys()), 200, mimetype="application/json")
+@app.route("/pkey", methods=["GET"])
+def get_pkey():
+    l, mu = server.phe.private_keys
+    return Response(json.dumps({"l": l, "mu": mu}), 200, mimetype="application/json")
+
+
+@app.route("/decrypted_results", methods=["GET"])
+def get_decrypted_results():
+    return
 
 
 if __name__ == "__main__":

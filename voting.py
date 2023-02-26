@@ -9,10 +9,18 @@ class Server:
         self.phe = Paillier()
         self.keys = self.phe.public_keys
         self.voters = {}
-        self.candidates = candidates
+        self.candidates = [Candidate(candidate) for candidate in candidates]
+        for candidate in self.candidates:
+            candidate.votes = self.encrypt(0)
 
     def public_key(self):
-        return {"n": hex(self.keys)[2:]}
+        return self.keys
+
+    def encrypt(self, message):
+        return self.phe.encrypt(message)
+
+    def decrypt(self, ciphertext):
+        return self.phe.decrypt(ciphertext)
 
 
 class Voter:
@@ -25,3 +33,4 @@ class Voter:
 class Candidate:
     def __init__(self, name: str) -> None:
         self.name = name
+        self.votes = 0
