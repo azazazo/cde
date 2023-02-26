@@ -1,4 +1,5 @@
 from flask import Flask, request, Response
+from flask_cors import CORS, cross_origin
 import json
 from base64 import b64encode
 
@@ -6,6 +7,9 @@ from voting import Server
 from blockchain import Blockchain
 
 app = Flask(__name__)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-type'
+
 
 blockchain = Blockchain()
 
@@ -22,6 +26,7 @@ def b64(data: str) -> str:
 
 
 @app.route("/chain", methods=["GET"])
+@cross_origin()
 def get_chain():
     chain = []
     for block in blockchain.chain:
@@ -31,8 +36,8 @@ def get_chain():
         "chain": chain
     })
 
-
 @app.route("/vote", methods=["POST"])
+@cross_origin()
 def post_vote():
     # sai use json pls
     # expecting in form of {"id": "...", "vote": index}
@@ -47,12 +52,11 @@ def post_vote():
         encrypted_votes = [server.encrypt(vote) for vote in votes]
         for candidate, vote in zip(server.candidates, encrypted_votes):
             candidate.votes *= vote
-            candidate.votes %= int(server.public_key()["n"], 16) ** 2
+            candidate.votes %= server.public_key() ** 2
         blockchain.transact(user_id)
         blockchain.transact(str(encrypted_votes))
         blockchain.mine()
-
-        return Response("Vote successful", 200)
+        return Response('{"message": "Vote successful"}', 200)
 
 
 def decrypt_votes():
