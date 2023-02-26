@@ -1,4 +1,5 @@
 from flask import Flask, request, Response
+import flask
 from flask_cors import CORS, cross_origin
 import json
 from base64 import b64encode
@@ -7,9 +8,9 @@ from voting import Server
 from blockchain import Blockchain
 
 app = Flask(__name__)
+
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-type'
-
 
 blockchain = Blockchain()
 
@@ -44,7 +45,7 @@ def post_vote():
     user_id = request.json["id"]
     vote_index = request.json["vote"]
     if check_user(user_id):
-        return Response("User has already voted", 401)
+        return Response('{"message": "User has already voted"}', 401)
     else:
         print("gwa")
         votes = [0, 0, 0]
@@ -90,7 +91,7 @@ def get_pkey():
 
 @app.route("/decrypted_results", methods=["GET"])
 def get_decrypted_results():
-    return
+    return [server.decrypt(candidate.votes) for candidate in server.candidates]
 
 
 if __name__ == "__main__":
