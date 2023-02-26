@@ -26,6 +26,17 @@ def get_chain():
         "chain": chain
     })
 
+@app.route("/key", methods=["GET"])
+def get_key():
+    return json.dumps(server.public_key())
+
+@app.route("/vote", methods=["POST"])
+def post_vote():
+    pass
+
+@app.route("/results", methods=["GET"])
+def get_results():
+    pass
 
 # @app.route("/voter/new", methods=["POST"])
 # def create_voter():
